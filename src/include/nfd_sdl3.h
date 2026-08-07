@@ -35,7 +35,7 @@ NFD_INLINE bool NFD_SetDisplayPropertiesFromSDLWindow(SDL_Window* window) {
 
     const char* driver = SDL_GetCurrentVideoDriver();
     if (driver && SDL_strcmp(driver, "wayland") == 0) {
-        void* display = SDL_GetPointerProperty(
+        wl_display* display = (wl_display*)SDL_GetPointerProperty(
             props, SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL
         );
         if (display) {
