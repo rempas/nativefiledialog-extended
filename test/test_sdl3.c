@@ -7,18 +7,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Small program meant to demonstrate and test nfd_sdl2.h with SDL2.  Note that it quits immediately
+// Small program meant to demonstrate and test nfd_sdl3.h with SDL3.  Note that it quits immediately
 // when it encounters an error, without calling the opposite destroy/quit function. A real-world
 // application should call destroy/quit appropriately.
 void show_error(const char* message, SDL_Window* window) {
-    if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message, window) != 0) {
+    if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message, window)) {
         printf("SDL_ShowSimpleMessageBox failed: %s\n", SDL_GetError());
         return;
     }
 }
 
 void show_path(const char* path, SDL_Window* window) {
-    if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Success", path, window) != 0) {
+    if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Success", path, window)) {
         printf("SDL_ShowSimpleMessageBox failed: %s\n", SDL_GetError());
         return;
     }
@@ -65,7 +65,7 @@ void show_paths(const nfdpathset_t* paths, SDL_Window* window) {
         NFD_PathSet_FreePathU8(path);
     }
 
-    if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Success", message, window) != 0) {
+    if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Success", message, window)) {
         printf("SDL_ShowSimpleMessageBox failed: %s\n", SDL_GetError());
         free(message);
         return;
@@ -75,7 +75,7 @@ void show_paths(const nfdpathset_t* paths, SDL_Window* window) {
 }
 
 void set_native_window(SDL_Window* sdlWindow, nfdwindowhandle_t* nativeWindow) {
-    if (!NFD_GetNativeWindowFromSDLWindow(sdlWindow, nativeWindow)) {
+    if (NFD_GetNativeWindowFromSDLWindow(sdlWindow, nativeWindow) == NFD_ERROR) {
         printf("NFD_GetNativeWindowFromSDLWindow failed: %s\n", SDL_GetError());
     }
 }
@@ -198,26 +198,21 @@ void (*button_handler[NUM_BUTTONS])(SDL_Window*) = {&opendialog_handler,
                                                     &pickfolder_handler,
                                                     &pickfoldermultiple_handler};
 
-#ifdef _WIN32
-int WINAPI WinMain(void)
-#else
-int main(void)
-#endif
-{
+int main(int argc, char* argv[]) {
 #ifdef _WIN32
     // Enable DPI awareness on Windows
-    SDL_SetHint("SDL_HINT_WINDOWS_DPI_AWARENESS", "permonitorv2");
-    SDL_SetHint("SDL_HINT_WINDOWS_DPI_SCALING", "1");
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
 #endif
 
     // initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
         printf("SDL_Init failed: %s\n", SDL_GetError());
         return 0;
     }
 
     // initialize SDL_ttf
-    if (TTF_Init() != 0) {
+    if (!TTF_Init()) {
         printf("TTF_Init failed: %s\n", TTF_GetError());
         return 0;
     }
@@ -230,11 +225,9 @@ int main(void)
 
     // create window
     SDL_Window* const window = SDL_CreateWindow("Welcome",
-                                                SDL_WINDOWPOS_UNDEFINED,
-                                                SDL_WINDOWPOS_UNDEFINED,
                                                 BUTTON_WIDTH,
                                                 BUTTON_HEIGHT * NUM_BUTTONS,
-                                                SDL_WINDOW_ALLOW_HIGHDPI);
+                                                SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (!window) {
         printf("SDL_CreateWindow failed: %s\n", SDL_GetError());
         return 0;
@@ -247,7 +240,7 @@ int main(void)
 
     // create renderer
     SDL_Renderer* const renderer =
-        SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+        SDL_CreateRenderer(window, NULL);
     if (!renderer) {
         printf("SDL_CreateRenderer failed: %s\n", SDL_GetError());
         return 0;
@@ -258,7 +251,7 @@ int main(void)
 
     TTF_Font* font = NULL;
     for (size_t i = 0; i != num_font_files; ++i) {
-        font = TTF_OpenFont(font_file[i], 20);
+        font = TTF_OpenFont(font_file[i], 20.0f);
         if (font) break;
     }
     if (!font) {
@@ -279,26 +272,29 @@ int main(void)
             return 0;
         }
 
-        if (SDL_SetSurfaceBlendMode(text_surface, SDL_BLENDMODE_BLEND) != 0) {
+        if (!SDL_SetSurfaceBlendMode(text_surface, SDL_BLENDMODE_BLEND)) {
             printf("SDL_SetSurfaceBlendMode failed: %s\n", SDL_GetError());
             return 0;
         }
 
         for (size_t j = 0; j != NUM_STATES; ++j) {
             SDL_Surface* button_surface =
-                SDL_CreateRGBSurface(0, BUTTON_WIDTH, BUTTON_HEIGHT, 32, 0, 0, 0, 0);
+                SDL_CreateSurface(BUTTON_WIDTH, BUTTON_HEIGHT, SDL_PIXELFORMAT_RGBA32);
             if (!button_surface) {
                 printf("SDL_CreateRGBSurface failed: %s\n", SDL_GetError());
                 return 0;
             }
 
-            if (SDL_FillRect(button_surface,
+            if (!SDL_FillSurfaceRect(button_surface,
                              NULL,
-                             SDL_MapRGBA(button_surface->format,
-                                         back_color[j].r,
-                                         back_color[j].g,
-                                         back_color[j].b,
-                                         back_color[j].a)) != 0) {
+                             SDL_MapRGBA(
+                                 SDL_GetPixelFormatDetails(button_surface->format),
+                                 NULL,
+                                 back_color[j].r,
+                                 back_color[j].g,
+                                 back_color[j].b,
+                                 back_color[j].a
+                             ))) {
                 printf("SDL_FillRect failed: %s\n", SDL_GetError());
                 return 0;
             }
@@ -309,7 +305,7 @@ int main(void)
                                 (BUTTON_HEIGHT - text_surface->h) / 2,
                                 text_surface->w,
                                 text_surface->h};
-            if (SDL_BlitSurface(text_surface, NULL, button_surface, &dstrect) != 0) {
+            if (!SDL_BlitSurface(text_surface, NULL, button_surface, &dstrect)) {
                 printf("SDL_BlitSurface failed: %s\n", SDL_GetError());
                 return 0;
             }
@@ -320,12 +316,12 @@ int main(void)
                 return 0;
             }
 
-            SDL_FreeSurface(button_surface);
+            SDL_DestroySurface(button_surface);
 
             textures_normal[i][j] = texture;
         }
 
-        SDL_FreeSurface(text_surface);
+        SDL_DestroySurface(text_surface);
     }
 
     TTF_CloseFont(font);
@@ -337,36 +333,33 @@ int main(void)
     do {
         // render
         for (size_t i = 0; i != NUM_BUTTONS; ++i) {
-            const SDL_Rect rect = {0, (int)i * BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT};
-            SDL_RenderCopy(
-                renderer, textures_normal[i][button_index == i ? pressed ? 2 : 1 : 0], NULL, &rect);
+            const SDL_FRect rect = {0.0f, (float)i * BUTTON_HEIGHT, (float)BUTTON_WIDTH, (float)BUTTON_HEIGHT};
+            int button_state = button_index == i ? (pressed ? 2 : 1) : 0;
+            SDL_RenderTexture(renderer, textures_normal[i][button_state], NULL, &rect);
         }
         SDL_RenderPresent(renderer);
 
         // process events
         SDL_Event event;
-        if (SDL_WaitEvent(&event) == 0) {
+        if (!SDL_WaitEvent(&event)) {
             printf("SDL_WaitEvent failed: %s\n", SDL_GetError());
             return 0;
         }
         do {
             switch (event.type) {
-                case SDL_QUIT: {
+                case SDL_EVENT_QUIT:
                     quit = true;
                     break;
-                }
-                case SDL_WINDOWEVENT: {
-                    switch (event.window.event) {
-                        case SDL_WINDOWEVENT_CLOSE:
-                            quit = true;
-                            break;
-                        case SDL_WINDOWEVENT_LEAVE:
-                            button_index = (size_t)-1;
-                            break;
-                    }
+
+                case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                    quit = true;
                     break;
-                }
-                case SDL_MOUSEMOTION: {
+
+                case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+                    button_index = (size_t)-1;
+                    break;
+
+                case SDL_EVENT_MOUSE_MOTION: {
                     if (event.motion.x < 0 || event.motion.x >= BUTTON_WIDTH ||
                         event.motion.y < 0) {
                         button_index = (size_t)-1;
@@ -377,18 +370,18 @@ int main(void)
                         button_index = (size_t)-1;
                         break;
                     }
-                    button_index = index;
-                    pressed = event.motion.state & SDL_BUTTON(1);
+                    button_index = (size_t)index;
+                    pressed = (event.motion.state & SDL_BUTTON_LMASK) != 0;
                     break;
                 }
-                case SDL_MOUSEBUTTONDOWN: {
-                    if (event.button.button == 1) {
+                case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+                    if (event.button.button == SDL_BUTTON_LEFT) {
                         pressed = true;
                     }
                     break;
                 }
-                case SDL_MOUSEBUTTONUP: {
-                    if (event.button.button == 1) {
+                case SDL_EVENT_MOUSE_BUTTON_UP: {
+                    if (event.button.button == SDL_BUTTON_LEFT) {
                         pressed = false;
                         if (button_index != (size_t)-1) {
                             (*button_handler[button_index])(window);
@@ -397,7 +390,7 @@ int main(void)
                     break;
                 }
             }
-        } while (SDL_PollEvent(&event) != 0);
+        } while (SDL_PollEvent(&event));
     } while (!quit);
 
     // destroy textures

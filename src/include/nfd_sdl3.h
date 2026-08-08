@@ -26,6 +26,7 @@ extern "C" {
 /**
  * Sets the wayland display if the process is running under Wayland, otherwise does nothing.
  * @param sdlWindow The SDL window handle.
+ * @return Either true on success or false on error
  */
 NFD_INLINE bool NFD_SetDisplayPropertiesFromSDLWindow(SDL_Window* window) {
     if (!window) return false;
@@ -33,9 +34,10 @@ NFD_INLINE bool NFD_SetDisplayPropertiesFromSDLWindow(SDL_Window* window) {
     SDL_PropertiesID props = SDL_GetWindowProperties(window);
     if (!props) return false;
 
+#if defined(SDL_PLATFORM_UNIX) && !defined(SDL_PLATFORM_APPLE)
     const char* driver = SDL_GetCurrentVideoDriver();
     if (driver && SDL_strcmp(driver, "wayland") == 0) {
-        wl_display* display = (wl_display*)SDL_GetPointerProperty(
+        struct wl_display* display = (struct wl_display*)SDL_GetPointerProperty(
             props, SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL
         );
         if (display) {
@@ -43,6 +45,7 @@ NFD_INLINE bool NFD_SetDisplayPropertiesFromSDLWindow(SDL_Window* window) {
             return true;
         }
     }
+#endif
 
     return false;
 }
@@ -52,7 +55,7 @@ NFD_INLINE bool NFD_SetDisplayPropertiesFromSDLWindow(SDL_Window* window) {
  * @param sdlWindow The SDL window handle.
  * @param[out] nativeWindow The output native window handle, populated if and only if this function
  * returns true.
- * @return Either true to indicate success, or false to indicate failure.  If false is returned,
+ * @return Either NFD_OK to indicate success, or NFD_ERROR to indicate failure. In the later case,
  * you can call SDL_GetError() for more information.  However, it is intended that users ignore the
  * error and simply pass a value-initialized nfdwindowhandle_t to NFDe if this function fails. */
 NFD_INLINE nfdresult_t NFD_GetNativeWindowFromSDLWindow(
@@ -103,4 +106,4 @@ NFD_INLINE nfdresult_t NFD_GetNativeWindowFromSDLWindow(
 }
 #endif  // __cplusplus
 
-#endif  // _NFD_SDL2_H
+#endif  // _NFD_SDL3_H
