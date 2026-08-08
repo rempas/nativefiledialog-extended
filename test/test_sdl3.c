@@ -1,11 +1,13 @@
 #define SDL_MAIN_HANDLED
-#include <SDL.h>
-#include <SDL_ttf.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <nfd.h>
 #include <nfd_sdl3.h>
+#include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 // Small program meant to demonstrate and test nfd_sdl3.h with SDL3.  Note that it quits immediately
 // when it encounters an error, without calling the opposite destroy/quit function. A real-world
@@ -176,8 +178,14 @@ const char* font_file[] = {"C:\\Windows\\Fonts\\calibri.ttf"};
 const char* font_file[] = {"/System/Library/Fonts/SFNS.ttf"};
 #else
 const char* font_file[] = {
-    "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",  // Ubuntu
+    "/usr/share/fonts/noto/NotoSans-Regular.ttf",           // Arch/OpenSUSE
+    "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",  // Ubuntu/Debian
     "/usr/share/fonts/google-noto/NotoSans-Regular.ttf",    // Fedora
+
+    // Fallback if noto fonts are not found
+    "/usr/share/fonts/dejavu/DejaVuSans.ttf",               // Arch/OpenSUSE
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",      // Ubuntu/Debian
+    "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf",    // Fedora
 };
 #endif
 const size_t num_font_files = sizeof(font_file) / sizeof(const char*);
@@ -199,12 +207,6 @@ void (*button_handler[NUM_BUTTONS])(SDL_Window*) = {&opendialog_handler,
                                                     &pickfoldermultiple_handler};
 
 int main(int argc, char* argv[]) {
-#ifdef _WIN32
-    // Enable DPI awareness on Windows
-    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
-    SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
-#endif
-
     // initialize SDL
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         printf("SDL_Init failed: %s\n", SDL_GetError());
@@ -213,7 +215,7 @@ int main(int argc, char* argv[]) {
 
     // initialize SDL_ttf
     if (!TTF_Init()) {
-        printf("TTF_Init failed: %s\n", TTF_GetError());
+        printf("TTF_Init failed: %s\n", SDL_GetError());
         return 0;
     }
 
@@ -234,7 +236,7 @@ int main(int argc, char* argv[]) {
     }
 
     // this gives NFD the wl_display* on Wayland; this is needed to set the parent window
-    if (!NFD_SetDisplayPropertiesFromSDLWindow(window)) {
+    if (NFD_SetDisplayPropertiesFromSDLWindow(window) == NFD_ERROR) {
         printf("NFD_SetDisplayPropertiesFromSDLWindow failed: %s\n", SDL_GetError());
     }
 
@@ -246,6 +248,11 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    SDL_SetRenderLogicalPresentation(renderer,
+                                     BUTTON_WIDTH,
+                                     BUTTON_HEIGHT * NUM_BUTTONS,
+                                     SDL_LOGICAL_PRESENTATION_STRETCH);
+
     // prepare the buttons and handlers
     SDL_Texture* textures_normal[NUM_BUTTONS][NUM_STATES];
 
@@ -255,7 +262,7 @@ int main(int argc, char* argv[]) {
         if (font) break;
     }
     if (!font) {
-        printf("TTF_OpenFont failed: %s\n", TTF_GetError());
+        printf("TTF_OpenFont failed: %s\n", SDL_GetError());
         return 0;
     }
 
@@ -266,9 +273,9 @@ int main(int argc, char* argv[]) {
     const uint8_t text_alpha[NUM_STATES] = {153, 204, 255};
 
     for (size_t i = 0; i != NUM_BUTTONS; ++i) {
-        SDL_Surface* const text_surface = TTF_RenderUTF8_Blended(font, button_text[i], text_color);
+        SDL_Surface* const text_surface = TTF_RenderText_Blended(font, button_text[i], 0, text_color);
         if (!text_surface) {
-            printf("TTF_RenderUTF8_Blended failed: %s\n", TTF_GetError());
+            printf("TTF_RenderUTF8_Blended failed: %s\n", SDL_GetError());
             return 0;
         }
 
@@ -365,7 +372,7 @@ int main(int argc, char* argv[]) {
                         button_index = (size_t)-1;
                         break;
                     }
-                    const int index = event.motion.y / BUTTON_HEIGHT;
+                    const int index = (int)(event.motion.y / BUTTON_HEIGHT);
                     if (index < 0 || index >= NUM_BUTTONS) {
                         button_index = (size_t)-1;
                         break;

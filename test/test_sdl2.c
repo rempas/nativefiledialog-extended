@@ -177,8 +177,14 @@ const char* font_file[] = {"C:\\Windows\\Fonts\\calibri.ttf"};
 const char* font_file[] = {"/System/Library/Fonts/SFNS.ttf"};
 #else
 const char* font_file[] = {
-    "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",  // Ubuntu
+    "/usr/share/fonts/noto/NotoSans-Regular.ttf",           // Arch/OpenSUSE
+    "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",  // Ubuntu/Debian
     "/usr/share/fonts/google-noto/NotoSans-Regular.ttf",    // Fedora
+
+    // Fallback if noto fonts are not found
+    "/usr/share/fonts/dejavu/DejaVuSans.ttf",               // Arch/OpenSUSE
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",      // Ubuntu/Debian
+    "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf",    // Fedora
 };
 #endif
 const size_t num_font_files = sizeof(font_file) / sizeof(const char*);

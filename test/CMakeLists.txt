@@ -47,7 +47,7 @@ endif()
 
 if(${NFD_BUILD_SDL3_TESTS})
   find_package(PkgConfig REQUIRED)
-  pkg_check_modules(SDL3 REQUIRED sdl2 SDL3_ttf)
+  pkg_check_modules(SDL3 REQUIRED sdl3 sdl3-ttf)
   if(nfd_PLATFORM STREQUAL PLATFORM_WIN32)
     add_executable(test_sdl3 WIN32 test_sdl3.c test.manifest)
   else()
