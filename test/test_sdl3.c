@@ -235,12 +235,15 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    float window_scale = SDL_GetWindowDisplayScale(window);
+    window_scale = window_scale == 0.0f ? 1.0f : window_scale;
+
     // this gives NFD the wl_display* on Wayland; this is needed to set the parent window
     if (NFD_SetDisplayPropertiesFromSDLWindow(window) == NFD_ERROR) {
         printf("NFD_SetDisplayPropertiesFromSDLWindow failed: %s\n", SDL_GetError());
     }
 
-    // create renderer
+    // Create renderer
     SDL_Renderer* const renderer =
         SDL_CreateRenderer(window, NULL);
     if (!renderer) {
@@ -248,6 +251,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    // Properly support HiDPI
     SDL_SetRenderLogicalPresentation(renderer,
                                      BUTTON_WIDTH,
                                      BUTTON_HEIGHT * NUM_BUTTONS,
@@ -258,7 +262,7 @@ int main(int argc, char* argv[]) {
 
     TTF_Font* font = NULL;
     for (size_t i = 0; i != num_font_files; ++i) {
-        font = TTF_OpenFont(font_file[i], 20.0f);
+        font = TTF_OpenFont(font_file[i], 20.0f * window_scale);
         if (font) break;
     }
     if (!font) {
@@ -286,7 +290,7 @@ int main(int argc, char* argv[]) {
 
         for (size_t j = 0; j != NUM_STATES; ++j) {
             SDL_Surface* button_surface =
-                SDL_CreateSurface(BUTTON_WIDTH, BUTTON_HEIGHT, SDL_PIXELFORMAT_RGBA32);
+                SDL_CreateSurface((int)(BUTTON_WIDTH * window_scale), (int)(BUTTON_HEIGHT * window_scale), SDL_PIXELFORMAT_RGBA32);
             if (!button_surface) {
                 printf("SDL_CreateRGBSurface failed: %s\n", SDL_GetError());
                 return 0;
@@ -308,8 +312,8 @@ int main(int argc, char* argv[]) {
 
             SDL_SetSurfaceAlphaMod(text_surface, text_alpha[j]);
 
-            SDL_Rect dstrect = {(BUTTON_WIDTH - text_surface->w) / 2,
-                                (BUTTON_HEIGHT - text_surface->h) / 2,
+            SDL_Rect dstrect = {((int)(BUTTON_WIDTH * window_scale) - text_surface->w) / 2,
+                                ((int)(BUTTON_HEIGHT * window_scale) - text_surface->h) / 2,
                                 text_surface->w,
                                 text_surface->h};
             if (!SDL_BlitSurface(text_surface, NULL, button_surface, &dstrect)) {
