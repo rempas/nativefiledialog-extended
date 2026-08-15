@@ -28,7 +28,7 @@ extern "C" {
  * @param sdlWindow The SDL window handle.
  * @return Either NFD_OKAY on success (or when platform is not wayland) or NFD_ERROR on error
  */
-NFD_INLINE nfdresult_t NFD_SetDisplayPropertiesFromSDLWindow(SDL_Window* window) {
+NFD_INLINE nfdresult_t NFD_SetDisplayPropertiesFromSDLWindow(SDL_Window* sdlWindow) {
     if (!window) return NFD_ERROR;
 
     SDL_PropertiesID props = SDL_GetWindowProperties(window);
