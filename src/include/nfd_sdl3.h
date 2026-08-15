@@ -13,7 +13,7 @@
 #ifndef _NFD_SDL3_H
 #define _NFD_SDL3_H
 
-#include "nfd.h"
+#include <nfd.h>
 #include <SDL3/SDL.h>
 
 #ifdef __cplusplus
