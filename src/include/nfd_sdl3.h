@@ -61,7 +61,7 @@ NFD_INLINE nfdresult_t NFD_SetDisplayPropertiesFromSDLWindow(SDL_Window* window)
  * you can call SDL_GetError() for more information.  However, it is intended that users ignore the
  * error and simply pass a value-initialized nfdwindowhandle_t to NFDe if this function fails. */
 NFD_INLINE nfdresult_t NFD_GetNativeWindowFromSDLWindow(
-    SDL_Window* window, nfdwindowhandle_t* outHandle
+    SDL_Window* sdlWindow, nfdwindowhandle_t* nativeWindow
 ) {
     if (!window || !outHandle) {
         return NFD_ERROR;
