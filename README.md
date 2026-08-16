@@ -351,7 +351,7 @@ Win32 (Windows), Cocoa (macOS), X11 (Linux), and Wayland (Linux) windows are sup
 
 If using SDL2, include `<nfd_sdl2.h>` and do the following:
 
-Call the following function once, after you create your first SDL window (usually with `SDL_CreateWindow()`) but before opening any file dialogs, to tell NFDe the `wl_display` your application is using (this function does nothing if your application isn't using Wayland):
+Call the following function once, after you create your first SDL2 window (usually with `SDL_CreateWindow()`) but before opening any file dialogs, to tell NFDe the `wl_display` your application is using (this function does nothing if your application isn't using Wayland):
 ```C
 NFD_SetDisplayPropertiesFromSDLWindow(sdlWindow /* SDL_Window* */);
 ```
@@ -361,7 +361,7 @@ Each time you want to show a dialog, call the following function to retrieve the
 NFD_GetNativeWindowFromSDLWindow(sdlWindow /* SDL_Window* */, &args.parentWindow);
 ```
 
-See `test_sdl2.c` (for SDL2) for an example.
+See `test_sdl2.c` for an example.
 
 #### GLFW3
 
