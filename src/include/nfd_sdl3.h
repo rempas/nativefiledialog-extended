@@ -27,7 +27,9 @@ extern "C" {
  * Converts an SDL window handle to a native window handle that can be passed to NFDe.
  * @param sdlWindow The SDL window handle.
  * @param[out] nativeWindow The output native window handle, populated if and only if this function
- * returns true. */
+ * @return Either true to indicate success, or false to indicate failure. In the latter case,
+ * you can call SDL_GetError() for more information.  However, it is intended that users ignore the
+ * error and simply pass a value-initialized nfdwindowhandle_t to NFDe if this function fails. */
 NFD_INLINE bool NFD_GetNativeWindowFromSDLWindow(
     SDL_Window* sdlWindow, nfdwindowhandle_t* nativeWindow
 ) {
