@@ -32,7 +32,7 @@ NFD_INLINE bool NFD_GetNativeWindowFromSDLWindow(
     SDL_Window* sdlWindow, nfdwindowhandle_t* nativeWindow
 ) {
     // Get the properties container for this specific window
-    SDL_PropertiesID props = SDL_GetWindowProperties(window);
+    SDL_PropertiesID props = SDL_GetWindowProperties(sdlWindow);
     if (!props) {
         return false;
     }
