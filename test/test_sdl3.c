@@ -238,11 +238,6 @@ int main(int argc, char* argv[]) {
     float window_scale = SDL_GetWindowDisplayScale(window);
     window_scale = window_scale == 0.0f ? 1.0f : window_scale;
 
-    // this gives NFD the wl_display* on Wayland; this is needed to set the parent window
-    if (NFD_SetDisplayPropertiesFromSDLWindow(window) == NFD_ERROR) {
-        printf("NFD_SetDisplayPropertiesFromSDLWindow failed: %s\n", SDL_GetError());
-    }
-
     // Create renderer
     SDL_Renderer* const renderer =
         SDL_CreateRenderer(window, NULL);

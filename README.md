@@ -347,23 +347,21 @@ The `parentWindow` argument allows the user to give the dialog a parent.
 
 Win32 (Windows), Cocoa (macOS), X11 (Linux), and Wayland (Linux) windows are supported.  Wayland support requires you to tell NFDe the `wl_display` that owns the windows in your application.
 
-#### SDL2/SDL3
+#### SDL2
 
-If using SDL, include `<nfd_sdl2.h>` (for SDL2) or `<nfd_sdl3.h>` (for SDL3) and do the following:
+If using SDL2, include `<nfd_sdl2.h>` and do the following:
 
-Call the following function once, after you create your first SDL window (usually with `SDL_CreateWindow()`) but before opening any file dialogs, to tell NFDe the `wl_display` your application is using (this function does nothing if your application isn't using Wayland). :
+Call the following function once, after you create your first SDL window (usually with `SDL_CreateWindow()`) but before opening any file dialogs, to tell NFDe the `wl_display` your application is using (this function does nothing if your application isn't using Wayland):
 ```C
 NFD_SetDisplayPropertiesFromSDLWindow(sdlWindow /* SDL_Window* */);
 ```
-
-If you explicitely hide the window when it was created (it is shown by default), this function will not work as it has to be called by windows that are shown. So, you will have to call it when the window is shown instead!
 
 Each time you want to show a dialog, call the following function to retrieve the parent window handle and set the corresponding argument:
 ```C
 NFD_GetNativeWindowFromSDLWindow(sdlWindow /* SDL_Window* */, &args.parentWindow);
 ```
 
-See `test_sdl2.c` (for SDL2) and `test_sdl3.c` (for SDL3) for an example.
+See `test_sdl2.c` (for SDL2) for an example.
 
 #### GLFW3
 

@@ -24,84 +24,49 @@ extern "C" {
 #endif  // __cplusplus
 
 /**
- * Sets the wayland display if the process is running under Wayland, otherwise does nothing.
- * @param sdlWindow The SDL window handle.
- * @return Either NFD_OKAY on success (or when platform is not wayland) or NFD_ERROR on error
- */
-NFD_INLINE nfdresult_t NFD_SetDisplayPropertiesFromSDLWindow(SDL_Window* sdlWindow) {
-    if (!window) return NFD_ERROR;
-
-    SDL_PropertiesID props = SDL_GetWindowProperties(window);
-    if (!props) return NFD_ERROR;
-
-#if defined(SDL_PLATFORM_UNIX) && !defined(SDL_PLATFORM_APPLE)
-    const char* driver = SDL_GetCurrentVideoDriver();
-    if (driver && SDL_strcmp(driver, "wayland") == 0) {
-        struct wl_display* display = (struct wl_display*)SDL_GetPointerProperty(
-            props, SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL
-        );
-        if (display) {
-            NFD_SetWaylandDisplay(display);
-            return NFD_OKAY;
-        }
-    } else return NFD_OKAY;
-
-    return NFD_ERROR;
-#else
-    return NFD_OKAY;
-#endif
-}
-
-/**
  * Converts an SDL window handle to a native window handle that can be passed to NFDe.
  * @param sdlWindow The SDL window handle.
  * @param[out] nativeWindow The output native window handle, populated if and only if this function
- * returns true.
- * @return Either NFD_OKAY to indicate success, or NFD_ERROR to indicate failure. In the latter case,
- * you can call SDL_GetError() for more information.  However, it is intended that users ignore the
- * error and simply pass a value-initialized nfdwindowhandle_t to NFDe if this function fails. */
-NFD_INLINE nfdresult_t NFD_GetNativeWindowFromSDLWindow(
+ * returns true. */
+NFD_INLINE bool NFD_GetNativeWindowFromSDLWindow(
     SDL_Window* sdlWindow, nfdwindowhandle_t* nativeWindow
 ) {
-    if (!window || !outHandle) {
-        return NFD_ERROR;
-    }
-
     // Get the properties container for this specific window
     SDL_PropertiesID props = SDL_GetWindowProperties(window);
     if (!props) {
-        return NFD_ERROR;
+        return false;
     }
 
     const char* driver = SDL_GetCurrentVideoDriver();
     if (!driver) {
-        return NFD_ERROR;
+        return false;
     }
 
     // Check the active driver and pull the corresponding native property
     if (SDL_strcmp(driver, "wayland") == 0) {
-        outHandle->type = NFD_WINDOW_HANDLE_TYPE_WAYLAND;
-        outHandle->handle = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
+        nativeWindow->type = NFD_WINDOW_HANDLE_TYPE_WAYLAND;
+        nativeWindow->handle = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
     }
     else if (SDL_strcmp(driver, "x11") == 0) {
-        outHandle->type = NFD_WINDOW_HANDLE_TYPE_X11;
+        nativeWindow->type = NFD_WINDOW_HANDLE_TYPE_X11;
         // X11 Window ID is a number in SDL3 (Uint64).
         // We need to cast it to void* for NFD's struct.
-        outHandle->handle = (void*)(uintptr_t)SDL_GetNumberProperty(props, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
+        nativeWindow->handle = (void*)(uintptr_t)SDL_GetNumberProperty(props, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
     }
     else if (SDL_strcmp(driver, "windows") == 0) {
-        outHandle->type = NFD_WINDOW_HANDLE_TYPE_WINDOWS;
-        outHandle->handle = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+        nativeWindow->type = NFD_WINDOW_HANDLE_TYPE_WINDOWS;
+        nativeWindow->handle = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
     }
     else if (SDL_strcmp(driver, "cocoa") == 0) {
-        outHandle->type = NFD_WINDOW_HANDLE_TYPE_COCOA;
-        outHandle->handle = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
+        nativeWindow->type = NFD_WINDOW_HANDLE_TYPE_COCOA;
+        nativeWindow->handle = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
     }
     else {
-        return NFD_ERROR;
+        return false;
     }
 
-    return NFD_OKAY;
+    // Make sure "SDL_GetPointerProperty" returned with success
+    return nativeWindow->handle != NULL;
 }
 #undef NFD_INLINE
 #ifdef __cplusplus
