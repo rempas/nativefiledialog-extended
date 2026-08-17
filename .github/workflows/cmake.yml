@@ -255,8 +255,9 @@ jobs:
 
   build-ubuntu-sdl3:
 
-    name: Ubuntu latest - GCC, ${{ matrix.portal.name }}, ${{ matrix.wayland.name }}, Static, SDL3
-    runs-on: ubuntu-latest
+    # SDL3 is only packaged from Ubuntu 25.10 onwards, but ubuntu-latest is 24.04
+    name: Ubuntu 26.04 - GCC, ${{ matrix.portal.name }}, ${{ matrix.wayland.name }}, Static, SDL3
+    runs-on: ubuntu-26.04
 
     strategy:
       matrix:
@@ -277,7 +278,7 @@ jobs:
     - name: Upload test binaries
       uses: actions/upload-artifact@v4
       with:
-        name: Ubuntu latest - GCC, ${{ matrix.portal.name }}, ${{ matrix.wayland.name }}, Static, SDL3
+        name: Ubuntu 26.04 - GCC, ${{ matrix.portal.name }}, ${{ matrix.wayland.name }}, Static, SDL3
         path: |
           build/src/*
           build/test/*
