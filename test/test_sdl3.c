@@ -1,13 +1,13 @@
-#define SDL_MAIN_HANDLED
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <nfd.h>
 #include <nfd_sdl3.h>
-#include <stdio.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 // Small program meant to demonstrate and test nfd_sdl3.h with SDL3.  Note that it quits immediately
 // when it encounters an error, without calling the opposite destroy/quit function. A real-world
@@ -77,7 +77,7 @@ void show_paths(const nfdpathset_t* paths, SDL_Window* window) {
 }
 
 void set_native_window(SDL_Window* sdlWindow, nfdwindowhandle_t* nativeWindow) {
-    if (NFD_GetNativeWindowFromSDLWindow(sdlWindow, nativeWindow) == NFD_ERROR) {
+    if (!NFD_GetNativeWindowFromSDLWindow(sdlWindow, nativeWindow)) {
         printf("NFD_GetNativeWindowFromSDLWindow failed: %s\n", SDL_GetError());
     }
 }
@@ -183,9 +183,9 @@ const char* font_file[] = {
     "/usr/share/fonts/google-noto/NotoSans-Regular.ttf",    // Fedora
 
     // Fallback if noto fonts are not found
-    "/usr/share/fonts/dejavu/DejaVuSans.ttf",               // Arch/OpenSUSE
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",      // Ubuntu/Debian
-    "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf",    // Fedora
+    "/usr/share/fonts/dejavu/DejaVuSans.ttf",             // Arch/OpenSUSE
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",    // Ubuntu/Debian
+    "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf",  // Fedora
 };
 #endif
 const size_t num_font_files = sizeof(font_file) / sizeof(const char*);
@@ -207,6 +207,9 @@ void (*button_handler[NUM_BUTTONS])(SDL_Window*) = {&opendialog_handler,
                                                     &pickfoldermultiple_handler};
 
 int main(int argc, char* argv[]) {
+    (void)argc;
+    (void)argv;
+
     // initialize SDL
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         printf("SDL_Init failed: %s\n", SDL_GetError());
@@ -226,31 +229,31 @@ int main(int argc, char* argv[]) {
     }
 
     // create window
-    SDL_Window* const window = SDL_CreateWindow("Welcome",
-                                                BUTTON_WIDTH,
-                                                BUTTON_HEIGHT * NUM_BUTTONS,
-                                                SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    SDL_Window* const window = SDL_CreateWindow(
+        "Welcome", BUTTON_WIDTH, BUTTON_HEIGHT * NUM_BUTTONS, SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (!window) {
         printf("SDL_CreateWindow failed: %s\n", SDL_GetError());
         return 0;
+    }
+
+    // this gives NFD the wl_display* on Wayland; this is needed to set the parent window
+    if (!NFD_SetDisplayPropertiesFromSDL()) {
+        printf("NFD_SetDisplayPropertiesFromSDL failed: %s\n", SDL_GetError());
     }
 
     float window_scale = SDL_GetWindowDisplayScale(window);
     window_scale = window_scale == 0.0f ? 1.0f : window_scale;
 
     // Create renderer
-    SDL_Renderer* const renderer =
-        SDL_CreateRenderer(window, NULL);
+    SDL_Renderer* const renderer = SDL_CreateRenderer(window, NULL);
     if (!renderer) {
         printf("SDL_CreateRenderer failed: %s\n", SDL_GetError());
         return 0;
     }
 
     // Properly support HiDPI
-    SDL_SetRenderLogicalPresentation(renderer,
-                                     BUTTON_WIDTH,
-                                     BUTTON_HEIGHT * NUM_BUTTONS,
-                                     SDL_LOGICAL_PRESENTATION_STRETCH);
+    SDL_SetRenderLogicalPresentation(
+        renderer, BUTTON_WIDTH, BUTTON_HEIGHT * NUM_BUTTONS, SDL_LOGICAL_PRESENTATION_STRETCH);
 
     // prepare the buttons and handlers
     SDL_Texture* textures_normal[NUM_BUTTONS][NUM_STATES];
@@ -272,7 +275,8 @@ int main(int argc, char* argv[]) {
     const uint8_t text_alpha[NUM_STATES] = {153, 204, 255};
 
     for (size_t i = 0; i != NUM_BUTTONS; ++i) {
-        SDL_Surface* const text_surface = TTF_RenderText_Blended(font, button_text[i], 0, text_color);
+        SDL_Surface* const text_surface =
+            TTF_RenderText_Blended(font, button_text[i], 0, text_color);
         if (!text_surface) {
             printf("TTF_RenderUTF8_Blended failed: %s\n", SDL_GetError());
             return 0;
@@ -284,23 +288,22 @@ int main(int argc, char* argv[]) {
         }
 
         for (size_t j = 0; j != NUM_STATES; ++j) {
-            SDL_Surface* button_surface =
-                SDL_CreateSurface((int)(BUTTON_WIDTH * window_scale), (int)(BUTTON_HEIGHT * window_scale), SDL_PIXELFORMAT_RGBA32);
+            SDL_Surface* button_surface = SDL_CreateSurface((int)(BUTTON_WIDTH * window_scale),
+                                                            (int)(BUTTON_HEIGHT * window_scale),
+                                                            SDL_PIXELFORMAT_RGBA32);
             if (!button_surface) {
                 printf("SDL_CreateRGBSurface failed: %s\n", SDL_GetError());
                 return 0;
             }
 
             if (!SDL_FillSurfaceRect(button_surface,
-                             NULL,
-                             SDL_MapRGBA(
-                                 SDL_GetPixelFormatDetails(button_surface->format),
-                                 NULL,
-                                 back_color[j].r,
-                                 back_color[j].g,
-                                 back_color[j].b,
-                                 back_color[j].a
-                             ))) {
+                                     NULL,
+                                     SDL_MapRGBA(SDL_GetPixelFormatDetails(button_surface->format),
+                                                 NULL,
+                                                 back_color[j].r,
+                                                 back_color[j].g,
+                                                 back_color[j].b,
+                                                 back_color[j].a))) {
                 printf("SDL_FillRect failed: %s\n", SDL_GetError());
                 return 0;
             }
@@ -339,7 +342,8 @@ int main(int argc, char* argv[]) {
     do {
         // render
         for (size_t i = 0; i != NUM_BUTTONS; ++i) {
-            const SDL_FRect rect = {0.0f, (float)i * BUTTON_HEIGHT, (float)BUTTON_WIDTH, (float)BUTTON_HEIGHT};
+            const SDL_FRect rect = {
+                0.0f, (float)i * BUTTON_HEIGHT, (float)BUTTON_WIDTH, (float)BUTTON_HEIGHT};
             int button_state = button_index == i ? (pressed ? 2 : 1) : 0;
             SDL_RenderTexture(renderer, textures_normal[i][button_state], NULL, &rect);
         }
