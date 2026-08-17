@@ -15,6 +15,7 @@
 
 #include <nfd.h>
 #include <SDL3/SDL.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
